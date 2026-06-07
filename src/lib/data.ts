@@ -1,14 +1,11 @@
-// This module conditionally exports mock data based on environment
-// In development, it uses mock data
-// In production, it should use real API calls
-
-export * from './mock-data';
-
-// Development-only warning
-if (process.env.NODE_ENV === 'development') {
-  console.info('ℹ️ Using mock data (development mode)');
+// src/lib/data.ts (production version)
+export async function getSpares() {
+  const { data } = await supabase.from('spares').select('*');
+  return data;
 }
 
-if (process.env.NODE_ENV === 'production') {
-  console.warn('⚠️ Mock data being used in production. Switch to real API calls.');
+export async function getEquipment() {
+  const { data } = await supabase.from('equipment').select('*');
+  return data;
 }
+// ... etc
