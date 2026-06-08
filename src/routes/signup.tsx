@@ -1,17 +1,12 @@
 import { useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { AuthLayout } from "./login";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/signup")({
   head: () => ({ meta: [{ title: "Create account — Equipment Assistant" }] }),
@@ -20,7 +15,7 @@ export const Route = createFileRoute("/signup")({
 
 function SignupPage() {
   const navigate = useNavigate();
-  const [form, setForm] = useState({ name: "", email: "", password: "", role: "Planner" });
+  const [form, setForm] = useState({ name: "", email: "", password: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
 
@@ -28,7 +23,7 @@ function SignupPage() {
     setForm((f) => ({ ...f, [key]: value }));
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const next: Record<string, string> = {};
     if (!form.name.trim()) next.name = "Full name is required";
@@ -38,8 +33,23 @@ function SignupPage() {
     else if (form.password.length < 8) next.password = "At least 8 characters";
     setErrors(next);
     if (Object.keys(next).length) return;
+
     setLoading(true);
-    setTimeout(() => navigate({ to: "/dashboard" }), 700);
+    const { error } = await supabase.auth.signUp({
+      email: form.email,
+      password: form.password,
+      options: {
+        emailRedirectTo: `${window.location.origin}/dashboard`,
+        data: { full_name: form.name },
+      },
+    });
+    setLoading(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Account created — check your email if confirmation is required");
+    navigate({ to: "/dashboard" });
   }
 
   return (
@@ -76,20 +86,6 @@ function SignupPage() {
             placeholder="planner@cementco.com"
           />
           {errors.email && <p className="text-xs text-destructive">{errors.email}</p>}
-        </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="role">Role</Label>
-          <Select value={form.role} onValueChange={(v) => update("role", v)}>
-            <SelectTrigger id="role">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="Planner">Spares Planner</SelectItem>
-              <SelectItem value="Inspector">Maintenance Inspector</SelectItem>
-              <SelectItem value="Manager">Manager / CPD Head</SelectItem>
-              <SelectItem value="Admin">Administrator</SelectItem>
-            </SelectContent>
-          </Select>
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="password">Password</Label>
