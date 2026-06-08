@@ -27,6 +27,16 @@ export function AppShell({
   actions?: ReactNode;
   children: ReactNode;
 }) {
+  const navigate = useNavigate();
+  const { session } = useSession();
+  const email = session?.user.email ?? "";
+  const initials = email ? email.slice(0, 2).toUpperCase() : "EA";
+
+  async function signOut() {
+    await supabase.auth.signOut();
+    navigate({ to: "/login" });
+  }
+
   return (
     <SidebarProvider>
       <div className="flex min-h-screen w-full bg-background">
