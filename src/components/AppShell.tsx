@@ -1,5 +1,5 @@
 import { type ReactNode } from "react";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { Bell, LogOut, Search } from "lucide-react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
@@ -13,6 +13,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { supabase } from "@/integrations/supabase/client";
+import { useSession } from "@/hooks/use-session";
 
 export function AppShell({
   title,
@@ -25,6 +27,16 @@ export function AppShell({
   actions?: ReactNode;
   children: ReactNode;
 }) {
+  const navigate = useNavigate();
+  const { session } = useSession();
+  const email = session?.user.email ?? "";
+  const initials = email ? email.slice(0, 2).toUpperCase() : "EA";
+
+  async function signOut() {
+    await supabase.auth.signOut();
+    navigate({ to: "/login" });
+  }
+
   return (
     <SidebarProvider>
       <div className="flex min-h-screen w-full bg-background">
@@ -47,11 +59,10 @@ export function AppShell({
                 <DropdownMenuTrigger asChild>
                   <button className="flex items-center gap-2 rounded-md px-2 py-1 hover:bg-accent/10">
                     <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
-                      MI
+                      {initials}
                     </div>
                     <div className="hidden text-left sm:block">
-                      <p className="text-xs font-medium leading-tight">M. Imran</p>
-                      <p className="text-[10px] text-muted-foreground">Planner</p>
+                      <p className="text-xs font-medium leading-tight">{email || "Account"}</p>
                     </div>
                   </button>
                 </DropdownMenuTrigger>
@@ -61,10 +72,8 @@ export function AppShell({
                   <DropdownMenuItem asChild>
                     <Link to="/settings">Settings</Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link to="/login">
-                      <LogOut className="mr-2 h-4 w-4" /> Sign out
-                    </Link>
+                  <DropdownMenuItem onClick={signOut}>
+                    <LogOut className="mr-2 h-4 w-4" /> Sign out
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>

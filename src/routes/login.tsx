@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { HardHat, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/login")({
   head: () => ({ meta: [{ title: "Sign in — Equipment Assistant" }] }),
@@ -17,7 +19,7 @@ function LoginPage() {
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   const [loading, setLoading] = useState(false);
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const next: typeof errors = {};
     if (!email) next.email = "Email is required";
@@ -26,8 +28,16 @@ function LoginPage() {
     else if (password.length < 6) next.password = "At least 6 characters";
     setErrors(next);
     if (Object.keys(next).length) return;
+
     setLoading(true);
-    setTimeout(() => navigate({ to: "/dashboard" }), 600);
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    setLoading(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Welcome back");
+    navigate({ to: "/dashboard" });
   }
 
   return (
@@ -57,15 +67,7 @@ function LoginPage() {
           {errors.email && <p className="text-xs text-destructive">{errors.email}</p>}
         </div>
         <div className="space-y-1.5">
-          <div className="flex items-center justify-between">
-            <Label htmlFor="password">Password</Label>
-            <button
-              type="button"
-              className="text-xs text-muted-foreground hover:text-foreground"
-            >
-              Forgot?
-            </button>
-          </div>
+          <Label htmlFor="password">Password</Label>
           <Input
             id="password"
             type="password"
@@ -79,9 +81,6 @@ function LoginPage() {
         <Button type="submit" className="w-full" disabled={loading}>
           {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Sign in"}
         </Button>
-        <p className="text-center text-[11px] text-muted-foreground">
-          Demo build — any valid form will sign you in.
-        </p>
       </form>
     </AuthLayout>
   );
